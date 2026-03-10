@@ -157,6 +157,12 @@ class vLLMRollout(BaseRollout):
         assert tensor_parallel_size <= torch.distributed.get_world_size(), (
             "tensor parallel size should be less than or equal to the world size"
         )
+        data_parallel_size = self.config.get("data_parallel_size", 1)
+        enable_expert_parallel = self.config.get("enable_expert_parallel", False)
+        dp_ep_kwargs = {}
+        if data_parallel_size > 1:
+            dp_ep_kwargs["data_parallel_size"] = data_parallel_size
+        dp_ep_kwargs["enable_expert_parallel"] = enable_expert_parallel
         max_num_batched_tokens = self.config.get("max_num_batched_tokens", 8192)
 
         rope_scaling_config = getattr(model_hf_config, "rope_scaling", None)
@@ -247,6 +253,7 @@ class vLLMRollout(BaseRollout):
             enable_prefix_caching=config.enable_prefix_caching,
             trust_remote_code=trust_remote_code,
             seed=config.get("seed", 0),
+            **dp_ep_kwargs,
             **compilation_config,
             **self.lora_kwargs,
             **engine_kwargs,

@@ -405,10 +405,13 @@ class ActorRolloutRefWorker(MegatronWorker, DistProfilerExtension):
         model_config: HFModelConfig = omega_conf_to_dataclass(self.config.model, dataclass_type=HFModelConfig)
 
         # 2. build rollout device mesh
-        infer_tp = self.config.rollout.tensor_model_parallel_size * self.config.rollout.data_parallel_size
+        # infer_tp = pure TP size (dispatch splits data per TP group independently)
+        # Internal DP is handled by vLLM's parallel groups, not by verl dispatch
+        # Total dp = ExternalDP * internal_DP = world_size / (TP * PP)
+        infer_tp = self.config.rollout.tensor_model_parallel_size
         infer_pp = self.config.rollout.pipeline_model_parallel_size
         infer_world_size = infer_tp * infer_pp
-        dp = self.world_size // infer_world_size
+        dp = self.world_size // infer_world_size  # = ExternalDP * internal_DP
         assert self.world_size % infer_world_size == 0, (
             f"rollout world_size: {self.world_size} is not divisible by infer_world_size: {infer_world_size}"
         )

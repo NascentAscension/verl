@@ -55,6 +55,9 @@ data_parallel_size: 1
 # EP size for rollout
 expert_parallel_size: 1
 
+# Whether to use EP for fused MoE or use ETP
+enable_expert_parallel: False
+
 # PP size for rollout.
 pipeline_model_parallel_size: 1
 
